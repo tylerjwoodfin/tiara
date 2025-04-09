@@ -1,15 +1,15 @@
-.TH KABMAT 1 2023-01-20 2.8.0
+.TH TIARA 1 2025-04-09 1.0.0
 
 .SH NAME
-kabmat \- kanban board management TUI program
+tiara \- kanban board management TUI program
 
 .SH SYNOPSIS
-.B kabmat
+.B tiara
 [\fBOPTION\fR]...
 [\fB\-t|\-o\fR]
 
 .SH DESCRIPTION
-.B kabmat
+.B tiara
 is an ncurses-based kanban boards manager with vim-like keybindings.
 
 .SH OPTIONS
@@ -279,10 +279,10 @@ delete highlighted item
 
 .SH FILES
 .TP
-.I $HOME/.local/share/kabmat/data
+.I $HOME/.local/share/tiara/data
 Main data file (see NOTES for info about syntax in this file).
 .TP
-.I $HOME/.local/share/kabmat/data_bkp
+.I $HOME/.local/share/tiara/data_bkp
 A backup file to which content of main data file is copied before writing anything into main date file to minimize data loss on crashes.
 
 .SH NOTES
@@ -311,4 +311,5 @@ Each line is an entry. A board's name has no spaces before it. A column's title 
 A checklist item is marked not done by adding a \- before its content and marked done by adding + before it.
 
 .SH AUTHOR
-PlankCipher <https://github.com/PlankCipher>
+Tyler Woodfin <https://github.com/tylerjwoodfin>
+Forked from PlankCipher <https://github.com/PlankCipher>
