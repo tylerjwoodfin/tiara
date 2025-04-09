@@ -1,10 +1,5 @@
 <div align="center">
-  <h1>kabmat</h1>
-
-  <a href="https://ko-fi.com/Y8Y4HZ5S3" target="_blank">
-    <img src="https://ko-fi.com/img/githubbutton_sm.svg" alt="Buy Me a Coffee at ko-fi.com" />
-  </a>
-
+  <h1>tiara</h1>
   <br>
   <br>
 
@@ -14,9 +9,9 @@ TUI program for managing kanban boards with vim-like keybindings
 
 ## Preview
 
-![kabmat](./assets/kabmat.gif)
+![tiara](./assets/tiara.gif)
 
-![kabmat](./assets/kabmat.png)
+![tiara](./assets/tiara.png)
 
 ## Dependencies
 
@@ -25,18 +20,20 @@ TUI program for managing kanban boards with vim-like keybindings
 
 ## Installation
 
-1. get the source code from latest release or clone this repo => `git clone https://github.com/PlankCipher/kabmat.git`
-2. cd into the source code or cloned repo => `cd kabmat`
-3. run `make` to build the program
-4. run `sudo make install` to install it
+```bash
+git clone git@github.com:tylerjwoodfin/tiara.git
+cd tiara
+make
+sudo make install
+```
 
 ## Usage
 
 ```
-kabmat 2.8.0
+tiara 1.0.0
 TUI program for managing kanban boards with vim-like keybindings
 
-Usage: kabmat [OPTION]...
+Usage: tiara [OPTION]...
 
 Options:
   -h, --help              print this help message
@@ -53,7 +50,7 @@ Options:
 Consult the man page for more information
 ```
 
-## Keybindings in `kabmat`
+## Keybindings in `tiara`
 
 I tried making the keybindings as intuitive and expected as possible, and for the most part they are. For example, generally `c` creates an entity, `d` deletes, `k` moves up, `j` moves down, etc...
 
@@ -174,17 +171,21 @@ I tried making the keybindings as intuitive and expected as possible, and for th
 
 ## Window Manager Integration
 
-If you want to launch it sort of like an application you can make a keybinding to launch your terminal with `kabmat` running instead of the shell. For example, here is how I do it with `st` and `dwm`.
+If you want to launch it sort of like an application you can make a keybinding to launch your terminal with `tiara` running instead of the shell. For example, here is how I do it with `st` and `dwm`.
 
 ```bash
-st -e sh -c kabmat
+st -e sh -c tiara
 ```
 
 ```c
 static Key keys[] = {
     /* modifier                                key                        function        argument */
     ....
-    { (Mod4Mask|Mod1Mask),                     XK_t,                      spawn,          SHCMD("st -e sh -c kabmat") },
+    { (Mod4Mask|Mod1Mask),                     XK_t,                      spawn,          SHCMD("st -e sh -c tiara") },
     ....
 };
 ```
+
+## Disclaimer
+
+This was forked from [PlankCipher/kabmat](https://github.com/PlankCipher/kabmat) and modified to better fit my needs.
