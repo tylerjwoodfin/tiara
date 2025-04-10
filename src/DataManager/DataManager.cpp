@@ -3,8 +3,12 @@
 #include "../helpers/consts.h"
 #include "../helpers/trim_spaces/trim_spaces.h"
 #include "DataManager.h"
+#include <iostream>
 
 DataManager::DataManager() : config(new Config()) {
+  // Load config settings
+  config->read_config();
+  
   fstream data_file;
   data_file.open(DATA_FILE, ios::in);
 
@@ -239,17 +243,48 @@ bool DataManager::move_column_right(Board *board, size_t column_index) {
 
 void DataManager::add_card(Column *column, Card card) {
   if (this->config->prefix) {
-    // Find the highest prefix number in the column
+    // Debug: Print prefix setting
+    cerr << "Prefix is enabled. Adding prefix to new card." << endl;
+    
+    // Find the highest prefix number in the current board
     int max_prefix = 0;
-    for (const auto &existing_card : column->cards) {
-      size_t pos = existing_card.content.find("::");
-      if (pos != string::npos) {
-        int prefix_num = stoi(existing_card.content.substr(0, pos));
-        max_prefix = max(max_prefix, prefix_num);
+    
+    // Find which board this column belongs to
+    Board* current_board = nullptr;
+    for (auto& board : this->boards) {
+      for (auto& col : board.columns) {
+        if (&col == column) {
+          current_board = &board;
+          break;
+        }
       }
+      if (current_board) break;
     }
-    // Add the next number as a prefix
-    card.content = to_string(max_prefix + 1) + "::" + card.content;
+    
+    if (current_board) {
+      // Look at all columns in the current board
+      for (const auto& col : current_board->columns) {
+        for (const auto& existing_card : col.cards) {
+          size_t pos = existing_card.content.find("::");
+          if (pos != string::npos) {
+            try {
+              int prefix_num = stoi(existing_card.content.substr(0, pos));
+              max_prefix = max(max_prefix, prefix_num);
+            } catch (const std::invalid_argument&) {
+              // Skip if the prefix is not a valid number
+              continue;
+            }
+          }
+        }
+      }
+      // Add the next number as a prefix
+      card.content = to_string(max_prefix + 1) + "::" + card.content;
+      cerr << "Added prefix " << (max_prefix + 1) << ":: to card" << endl;
+    } else {
+      cerr << "Could not find the board for this column" << endl;
+    }
+  } else {
+    cerr << "Prefix is disabled. Not adding prefix to new card." << endl;
   }
   column->add_card(card);
   this->write_data_to_file();

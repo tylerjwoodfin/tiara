@@ -23,14 +23,22 @@ void CardWin::show(int start_y, int start_x) {
 
   box(this->window, 0, 0);
 
-  // Hide prefix if it exists
+  // Show prefix if window is wider than tall
   string shown_content = this->card->content;
-  size_t pos = shown_content.find("::");
-  if (pos != string::npos) {
-    shown_content = shown_content.substr(pos + 2);
+  if (this->width > this->height) {
+    // Keep the prefix if it exists, replacing :: with -
+    size_t pos = shown_content.find("::");
+    if (pos != string::npos) {
+      shown_content = shown_content.substr(0, pos) + " - " + shown_content.substr(pos + 2);
+    }
+  } else {
+    // Hide prefix if it exists
+    size_t pos = shown_content.find("::");
+    if (pos != string::npos) {
+      shown_content = shown_content.substr(pos + 2);
+    }
+    shown_content = win_fit_text(this->window, shown_content);
   }
-
-  shown_content = win_fit_text(this->window, shown_content);
   mvwprintw(this->window, 1, 1, "%s", shown_content.c_str());
 }
 

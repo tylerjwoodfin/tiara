@@ -414,22 +414,29 @@ bool BoardScreen::handle_key_press(char key) {
       bool canceled = this->create_card_info_window(&card);
 
       if (!canceled && card.content != "") {
-        Column *column =
-            this->columns[this->columns_window.window_start -
-                          this->columns.begin() + this->focused_index]
-                .column;
-        this->data_manager->add_card(column, card);
+        // Make sure we're not accessing out of bounds
+        size_t column_index = this->columns_window.window_start - this->columns.begin() + this->focused_index;
+        if (column_index < this->columns.size()) {
+          Column *column = this->columns[column_index].column;
+          this->data_manager->add_card(column, card);
 
-        this->setup_columns();
+          // Completely refresh the board display
+          this->setup_columns();
+          
+          // Focus the just created card - with bounds checking
+          if (this->columns_count > 0) {
+            vector<ColumnWin> shown_columns = this->columns_window.get_current_window();
+            if (this->focused_index < shown_columns.size()) {
+              shown_columns[this->focused_index].focus_last();
+              *(this->columns_window.window_start + this->focused_index) = shown_columns[this->focused_index];
+            }
+          }
 
-        // focus the just created card
-        vector<ColumnWin> shown_columns =
-            this->columns_window.get_current_window();
-        shown_columns[this->focused_index].focus_last();
-        *(this->columns_window.window_start + this->focused_index) =
-            shown_columns[this->focused_index];
-
-        this->columns_window.draw();
+          // Force a complete redraw of the screen
+          werase(this->window);
+          this->columns_window.draw();
+          wrefresh(this->window);
+        }
       }
     }
 
@@ -438,31 +445,39 @@ bool BoardScreen::handle_key_press(char key) {
   case 'e': {
     // edit focused card
     if (this->columns_count > 0) {
-      size_t focused_col_index = this->columns_window.window_start -
-                                 this->columns.begin() + this->focused_index;
-      Column *column = this->columns[focused_col_index].column;
+      // Make sure we're not accessing out of bounds
+      size_t focused_col_index = this->columns_window.window_start - this->columns.begin() + this->focused_index;
+      if (focused_col_index < this->columns.size()) {
+        Column *column = this->columns[focused_col_index].column;
 
-      if (column->cards.size() > 0) {
-        size_t focused_card_index =
-            this->columns[focused_col_index].get_absolute_focused_index();
+        if (column->cards.size() > 0) {
+          size_t focused_card_index = this->columns[focused_col_index].get_absolute_focused_index();
+          if (focused_card_index < column->cards.size()) {
+            Card *card = &(column->cards[focused_card_index]);
 
-        Card *card = &(column->cards[focused_card_index]);
+            bool canceled = this->create_card_info_window(card);
 
-        bool canceled = this->create_card_info_window(card);
+            if (!canceled && card->content != "") {
+              size_t prev_offset = this->columns[focused_col_index].cards_window_offset;
+              size_t prev_focused_index = this->columns[focused_col_index].focused_index;
 
-        if (!canceled && card->content != "") {
-          size_t prev_offset =
-              this->columns[focused_col_index].cards_window_offset;
-          size_t prev_focused_index =
-              this->columns[focused_col_index].focused_index;
+              this->data_manager->update_card(column, focused_card_index, *card);
 
-          this->data_manager->update_card(column, focused_card_index, *card);
+              // Completely refresh the board display
+              this->setup_columns();
+              
+              // Make sure we're not accessing out of bounds after refresh
+              if (focused_col_index < this->columns.size()) {
+                this->columns[focused_col_index].cards_window_offset = prev_offset;
+                this->columns[focused_col_index].focused_index = prev_focused_index;
+              }
 
-          this->setup_columns();
-          this->columns[focused_col_index].cards_window_offset = prev_offset;
-          this->columns[focused_col_index].focused_index = prev_focused_index;
-
-          this->columns_window.draw();
+              // Force a complete redraw of the screen
+              werase(this->window);
+              this->columns_window.draw();
+              wrefresh(this->window);
+            }
+          }
         }
       }
     }

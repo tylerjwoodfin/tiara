@@ -86,5 +86,7 @@ void Config::write_config() {
     config_file << "# Tiara Configuration File" << endl;
     config_file << "# Data file location" << endl;
     config_file << "data_file_location=$HOME/syncthing/md/tiara/data" << endl;
+    config_file << "# Enable prefix for cards" << endl;
+    config_file << "prefix=" << (prefix ? "true" : "false") << endl;
     // Add other config options here as needed
 } 
