@@ -5,6 +5,7 @@
 #include "../../components/Header/Header.h"
 #include "../../components/Help/Help.h"
 #include "../../helpers/win_center_text/win_center_text.h"
+#include "../../components/GitHistoryDialog/GitHistoryDialog.h"
 
 BoardScreen::BoardScreen(string board_name, DataManager *data_manager,
                          Config *config, bool from_tui)
@@ -579,4 +580,99 @@ bool BoardScreen::create_confirm_dialog(string message) {
   this->columns_window.draw();
 
   return confirmed;
+}
+
+void BoardScreen::showGitHistory(const std::string& commitHash) {
+  // If a specific commit hash is provided, show it directly
+  if (!commitHash.empty()) {
+    string url = "https://github.com/commit/" + commitHash;
+    GitHistoryDialog dialog(10, 60, (LINES - 10) / 2, (COLS - 60) / 2, url);
+    dialog.show();
+    return;
+  }
+  
+  // Get the current card's prefix if available
+  string cardPrefix = "";
+  if (this->columns_count > 0) {
+    size_t focused_col_index = this->columns_window.window_start - this->columns.begin() + this->focused_index;
+    if (focused_col_index < this->columns.size()) {
+      Column* column = this->columns[focused_col_index].column;
+      if (column->cards.size() > 0) {
+        size_t focused_card_index = this->columns[focused_col_index].get_absolute_focused_index();
+        if (focused_card_index < column->cards.size()) {
+          Card* card = &(column->cards[focused_card_index]);
+          string content = card->content;
+          
+          // Extract prefix if it exists (format: "prefix::content")
+          size_t prefixEnd = content.find("::");
+          if (prefixEnd != string::npos) {
+            cardPrefix = content.substr(0, prefixEnd);
+          }
+        }
+      }
+    }
+  }
+  
+  // If no card prefix found, show error
+  if (cardPrefix.empty()) {
+    string error = "No card selected or card has no prefix.";
+    GitHistoryDialog dialog(10, 60, (LINES - 10) / 2, (COLS - 60) / 2, error);
+    dialog.show();
+    return;
+  }
+  
+  // Get the board name
+  string boardName = this->board->name;
+  
+  // Get GitHub username
+  string username = "";
+  FILE* pipe = popen("git config --get github.user", "r");
+  if (pipe) {
+    char buffer[1024];
+    if (fgets(buffer, sizeof(buffer), pipe) != NULL) {
+      username = string(buffer);
+      // Trim whitespace
+      username = username.substr(0, username.find_last_not_of(" \n\r\t") + 1);
+    }
+    pclose(pipe);
+  }
+  
+  if (username.empty()) {
+    // Show error dialog if username not found
+    string error = "GitHub username not found. Please set it with 'git config --global github.user YOUR_USERNAME'";
+    GitHistoryDialog dialog(10, 60, (LINES - 10) / 2, (COLS - 60) / 2, error);
+    dialog.show();
+    return;
+  }
+  
+  // Construct the search pattern: boardName-cardPrefix
+  string searchPattern = boardName + "-" + cardPrefix;
+  
+  // Search for commits across repositories
+  string command = "gh repo list \"" + username + "\" --limit 1000 --json nameWithOwner | jq -r '.[].nameWithOwner' | while read repo; do "
+                  "commits=$(gh api -X GET \"repos/$repo/commits\" -F per_page=100 -f sha=main "
+                  "-H \"Accept: application/vnd.github+json\" 2>/dev/null | "
+                  "jq -r '.[] | select(.commit.message | test(\"^" + searchPattern + "\"; \"i\")) | \"https://github.com/'$repo'/commit/\" + .sha' 2>/dev/null); "
+                  "if [[ -n \"$commits\" ]]; then echo \"$commits\" | head -n 1; break; fi; done";
+  
+  pipe = popen(command.c_str(), "r");
+  if (pipe) {
+    char buffer[1024];
+    string result = "";
+    if (fgets(buffer, sizeof(buffer), pipe) != NULL) {
+      result = string(buffer);
+      // Trim whitespace
+      result = result.substr(0, result.find_last_not_of(" \n\r\t") + 1);
+    }
+    pclose(pipe);
+    
+    if (!result.empty()) {
+      GitHistoryDialog dialog(10, 60, (LINES - 10) / 2, (COLS - 60) / 2, result);
+      dialog.show();
+    } else {
+      string noResults = "No matching commits found for pattern '" + searchPattern + "' in your repositories.";
+      GitHistoryDialog dialog(10, 60, (LINES - 10) / 2, (COLS - 60) / 2, noResults);
+      dialog.show();
+    }
+  }
 }

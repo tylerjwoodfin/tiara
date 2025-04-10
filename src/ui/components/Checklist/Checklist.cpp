@@ -3,6 +3,7 @@
 #include "../../helpers/win_center_text/win_center_text.h"
 #include "../../helpers/win_fit_text/win_fit_text.h"
 #include "../Input/Input.h"
+#include "../../screens/Board/Board.h"
 
 Checklist::Checklist(int height, int width, int start_y, int start_x,
                      Card *card, DataManager *data_manager)
@@ -189,6 +190,11 @@ void Checklist::show() {
 
       break;
     }
+    case 'p': {
+      // search git history
+      this->searchGitHistory();
+      break;
+    }
     case 'e': {
       // edit highlighted item's content
       if (this->checklist_items_count > 0) {
@@ -273,6 +279,10 @@ void Checklist::draw_checklist_items(
     string create_board_hint = "c to add a checklist item";
     int center_x = win_center_x(this->window, &create_board_hint);
     mvwprintw(this->window, 1, center_x, "%s", create_board_hint.c_str());
+    
+    string git_history_hint = "p to search git history";
+    center_x = win_center_x(this->window, &git_history_hint);
+    mvwprintw(this->window, 2, center_x, "%s", git_history_hint.c_str());
   }
 
   wrefresh(this->window);
@@ -336,4 +346,217 @@ string Checklist::create_input_window(string content) {
   this->checklist_items_window.draw();
 
   return input;
+}
+
+void Checklist::searchGitHistory() {
+  // Extract the prefix from the card content if it exists
+  string cardPrefix = "";
+  string content = this->card->content;
+  size_t pos = content.find("::");
+  if (pos != string::npos && pos > 0) {
+    cardPrefix = content.substr(0, pos);
+  }
+  
+  // If no prefix found, show error
+  if (cardPrefix.empty()) {
+    int max_y, max_x;
+    getmaxyx(stdscr, max_y, max_x);
+    
+    int height = 5;
+    int width = 50;
+    int start_y = (max_y / 2) - (height / 2);
+    int start_x = (max_x / 2) - (width / 2);
+    
+    WINDOW* error_window = newwin(height, width, start_y, start_x);
+    box(error_window, 0, 0);
+    mvwprintw(error_window, 1, 2, "No prefix found in card content.");
+    mvwprintw(error_window, 2, 2, "Card must have format: prefix::content");
+    mvwprintw(error_window, 3, 2, "Press any key to continue");
+    wrefresh(error_window);
+    wgetch(error_window);
+    delwin(error_window);
+    return;
+  }
+  
+  // Get the board name from the data manager
+  string boardName = "";
+  
+  // Instead of trying to find the board by comparing card pointers,
+  // we'll use the card content to find the matching board
+  for (const auto& board : this->data_manager->boards) {
+    for (const auto& column : board.columns) {
+      for (const auto& card : column.cards) {
+        if (card.content == this->card->content) {
+          boardName = board.name;
+          break;
+        }
+      }
+      if (!boardName.empty()) break;
+    }
+    if (!boardName.empty()) break;
+  }
+  
+  if (boardName.empty()) {
+    int max_y, max_x;
+    getmaxyx(stdscr, max_y, max_x);
+    
+    int height = 5;
+    int width = 50;
+    int start_y = (max_y / 2) - (height / 2);
+    int start_x = (max_x / 2) - (width / 2);
+    
+    WINDOW* error_window = newwin(height, width, start_y, start_x);
+    box(error_window, 0, 0);
+    mvwprintw(error_window, 1, 2, "Could not determine board name.");
+    mvwprintw(error_window, 2, 2, "Press any key to continue");
+    wrefresh(error_window);
+    wgetch(error_window);
+    delwin(error_window);
+    return;
+  }
+  
+  // Get GitHub username
+  string username = "";
+  FILE* pipe = popen("git config --get github.user", "r");
+  if (pipe) {
+    char buffer[1024];
+    if (fgets(buffer, sizeof(buffer), pipe) != NULL) {
+      username = string(buffer);
+      // Trim whitespace
+      username = username.substr(0, username.find_last_not_of(" \n\r\t") + 1);
+    }
+    pclose(pipe);
+  }
+  
+  if (username.empty()) {
+    int max_y, max_x;
+    getmaxyx(stdscr, max_y, max_x);
+    
+    int height = 5;
+    int width = 60;
+    int start_y = (max_y / 2) - (height / 2);
+    int start_x = (max_x / 2) - (width / 2);
+    
+    WINDOW* error_window = newwin(height, width, start_y, start_x);
+    box(error_window, 0, 0);
+    mvwprintw(error_window, 1, 2, "GitHub username not found.");
+    mvwprintw(error_window, 2, 2, "Please set it with 'git config --global github.user YOUR_USERNAME'");
+    mvwprintw(error_window, 3, 2, "Press any key to continue");
+    wrefresh(error_window);
+    wgetch(error_window);
+    delwin(error_window);
+    return;
+  }
+  
+  // Show "Searching..." dialog immediately
+  int max_y, max_x;
+  getmaxyx(stdscr, max_y, max_x);
+  
+  int height = 5;
+  int width = 40;
+  int start_y = (max_y / 2) - (height / 2);
+  int start_x = (max_x / 2) - (width / 2);
+  
+  WINDOW* searching_window = newwin(height, width, start_y, start_x);
+  box(searching_window, 0, 0);
+  mvwprintw(searching_window, 1, 2, "Searching Git history...");
+  mvwprintw(searching_window, 2, 2, "Please wait...");
+  wrefresh(searching_window);
+  
+  // Construct the search pattern: boardName-cardPrefix
+  string searchPattern = boardName + "-" + cardPrefix;
+  
+  // Search for commits across repositories
+  string command = "gh repo list \"" + username + "\" --limit 1000 --json nameWithOwner | jq -r '.[].nameWithOwner' | while read repo; do "
+                  "commits=$(gh api -X GET \"repos/$repo/commits\" -F per_page=100 -f sha=main "
+                  "-H \"Accept: application/vnd.github+json\" 2>/dev/null | "
+                  "jq -r '.[] | select(.commit.message | test(\"^" + searchPattern + "\"; \"i\")) | \"https://github.com/'$repo'/commit/\" + .sha' 2>/dev/null); "
+                  "if [[ -n \"$commits\" ]]; then echo \"$commits\" | head -n 1; break; fi; done";
+  
+  pipe = popen(command.c_str(), "r");
+  if (pipe) {
+    char buffer[1024];
+    string result = "";
+    if (fgets(buffer, sizeof(buffer), pipe) != NULL) {
+      result = string(buffer);
+      // Trim whitespace
+      result = result.substr(0, result.find_last_not_of(" \n\r\t") + 1);
+    }
+    pclose(pipe);
+    
+    // Remove the searching window
+    delwin(searching_window);
+    
+    // Show results
+    height = 10;
+    width = 60;
+    start_y = (max_y / 2) - (height / 2);
+    start_x = (max_x / 2) - (width / 2);
+    
+    WINDOW* result_window = newwin(height, width, start_y, start_x);
+    box(result_window, 0, 0);
+    
+    if (!result.empty()) {
+      mvwprintw(result_window, 1, 2, "Found commit URL:");
+      mvwprintw(result_window, 2, 2, "%s", result.c_str());
+      
+      mvwprintw(result_window, 4, 2, "Press o to open");
+      mvwprintw(result_window, 5, 2, "Press c to copy");
+      mvwprintw(result_window, 6, 2, "Press q to quit");
+      
+      wrefresh(result_window);
+      
+      bool done = false;
+      while (!done) {
+        char key = wgetch(result_window);
+        switch (key) {
+          case 'o': {
+            // Open URL in browser
+            string open_command = "open '" + result + "'";
+            system(open_command.c_str());
+            break;
+          }
+          case 'c': {
+            // Copy URL to clipboard
+            string clipboard_command = "echo '" + result + "' | pbcopy";
+            system(clipboard_command.c_str());
+            
+            // Show confirmation
+            mvwprintw(result_window, 8, 2, "URL copied to clipboard!");
+            wrefresh(result_window);
+            napms(1000); // Show for 1 second
+            mvwprintw(result_window, 8, 2, "                    "); // Clear the message
+            wrefresh(result_window);
+            break;
+          }
+          case 'q': {
+            done = true;
+            break;
+          }
+        }
+      }
+    } else {
+      mvwprintw(result_window, 1, 2, "No matching commits found for pattern '%s'", searchPattern.c_str());
+      mvwprintw(result_window, 3, 2, "Press any key to continue");
+      wrefresh(result_window);
+      wgetch(result_window);
+    }
+  } else {
+    // Remove the searching window
+    delwin(searching_window);
+    
+    // Show error
+    height = 5;
+    width = 50;
+    start_y = (max_y / 2) - (height / 2);
+    start_x = (max_x / 2) - (width / 2);
+    
+    WINDOW* error_window = newwin(height, width, start_y, start_x);
+    box(error_window, 0, 0);
+    mvwprintw(error_window, 1, 2, "Error executing Git search command.");
+    mvwprintw(error_window, 2, 2, "Press any key to continue");
+    wrefresh(error_window);
+    wgetch(error_window);
+    delwin(error_window);
+  }
 }

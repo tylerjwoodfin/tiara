@@ -8,6 +8,7 @@ public:
               bool from_tui);
 
   void show();
+  void showGitHistory(const std::string& commitHash);
 
   int height;
   int width;

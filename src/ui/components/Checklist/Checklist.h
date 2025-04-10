@@ -21,6 +21,7 @@ private:
                             WINDOW *scrollable_window);
   void setup_window();
   string create_input_window(string content = "");
+  void searchGitHistory();
 
   void highlight_above();
   void highlight_current();

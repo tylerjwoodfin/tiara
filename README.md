@@ -3,9 +3,21 @@
   <br>
   <br>
 
-TUI program for managing kanban boards with vim-like keybindings
-
+  <p>A modern TUI program for managing kanban boards with vim-like keybindings</p>
 </div>
+
+## Overview
+
+Tiara is a terminal-based kanban board application that allows you to organize your tasks and projects efficiently. It features a clean, intuitive interface with vim-like keybindings for quick navigation and task management.
+
+## Features
+
+- **Kanban Board Management**: Create, edit, and organize boards with columns and cards
+- **Checklist Support**: Add checkable items to your cards
+- **Prefix System**: Use prefixes to categorize and track cards across boards
+- **Git Integration**: Search for commit history related to your cards
+- **Configurable**: Customize behavior through a config file
+- **Vim-like Navigation**: Intuitive keybindings for efficient use
 
 ## Preview
 
@@ -17,6 +29,8 @@ TUI program for managing kanban boards with vim-like keybindings
 
 - `ncurses` for the UI
 - `make` and `g++`/`gcc` for compiling and installing
+- `git` for Git history features
+- `gh` (GitHub CLI) for enhanced Git history search
 
 ## Installation
 
@@ -50,9 +64,51 @@ Options:
 Consult the man page for more information
 ```
 
-## Keybindings in `tiara`
+## Configuration
 
-I tried making the keybindings as intuitive and expected as possible, and for the most part they are. For example, generally `c` creates an entity, `d` deletes, `k` moves up, `j` moves down, etc...
+Tiara stores its configuration in `~/.config/tiara/config`. You can customize various aspects of the application:
+
+- **Data Location**: Set where your board data is stored
+- **Card Placement**: Configure whether new cards are placed at the top or bottom of columns
+- **UI Preferences**: Adjust colors and display options
+
+Example config file:
+```
+data_file=/path/to/your/data/file
+card_at_bottom=true
+```
+
+## Card Prefixes
+
+Tiara supports a prefix system for cards to help with organization and tracking:
+
+- **Format in data file**: `prefix::content`
+- **Example**: `123::Fix login page crash`
+- **Benefits**:
+  - Categorize cards across boards
+  - Track related items
+  - Search Git history by prefix
+
+If enabled, new cards will be created with the next sequential number.
+
+## Git History Integration
+
+Tiara can search for Git commit history related to your cards:
+
+1. Press `p` in the checklist view to search for Git history
+2. The app will only search for commits beginning with the pattern `boardName-cardPrefix:`
+3. When a match is found, you can:
+   - Press `o` to open the commit in your browser
+   - Press `c` to copy the URL to your clipboard
+   - Press `q` to close the dialog
+
+This feature requires:
+- Git configured with your GitHub username
+- GitHub CLI (`gh`) installed and authenticated
+
+## Keybindings
+
+Tiara uses vim-like keybindings for intuitive navigation and operation.
 
 ### Help Window:
 
@@ -168,6 +224,15 @@ I tried making the keybindings as intuitive and expected as possible, and for th
 | e         | edit content of highlighted item        |
 | \<Space\> | toggle highlighted item (done/not done) |
 | d         | delete highlighted item                 |
+| p         | search Git history for this card        |
+
+### Git History Dialog:
+
+| Key | Function                                |
+| --- | --------------------------------------- |
+| o   | open the commit URL in your browser     |
+| c   | copy the commit URL to your clipboard   |
+| q   | close the dialog                        |
 
 ## Window Manager Integration
 
