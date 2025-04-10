@@ -1,7 +1,7 @@
 #include "CardInfo.h"
 #include "../../../helpers/consts.h"
 #include "../Checklist/Checklist.h"
-
+#include <iostream>
 CardInfo::CardInfo(int height, int width, int start_y, int start_x,
                    Card *card) {
   this->height = height;
@@ -21,7 +21,14 @@ void CardInfo::setup_window(Input *content_input, Input *description_input,
   box(this->window, 0, 0);
   wattroff(this->window, COLOR_PAIR(COLOR_PAIR_BORDER));
 
-  string window_title = " Card Info ";
+  // Show prefix in the title if it exists
+  string window_title = " Card Info - ";
+  string card_title = this->card->content;
+  size_t pos = card_title.find("::");
+  if (pos != string::npos) {
+    window_title += card_title.substr(0, pos);
+  }
+
   mvwprintw(this->window, 0, (this->width / 2) - (window_title.length() / 2),
             "%s", window_title.c_str());
   refresh();
@@ -34,12 +41,21 @@ void CardInfo::setup_window(Input *content_input, Input *description_input,
 }
 
 bool CardInfo::show(DataManager *data_manager) {
+  // Create content input with height 3 (single line)
+  string content_to_show = this->card->content;
+  size_t pos = content_to_show.find("::");
+  if (pos != string::npos) {
+    content_to_show = content_to_show.substr(pos + 2);
+  }
+  
   Input content_input =
       Input(3, this->width - 2, this->start_y + 1, this->start_x + 1,
-            this->card->content, " Content ");
+            content_to_show, " Content ");
+            
+  // Create description input with remaining height (multi-line)
   Input description_input =
       Input(this->height - 5, this->width - 2, this->start_y + 4,
-            this->start_x + 1, this->card->description, " Description ");
+            this->start_x + 1, this->card->description, " Description ", false, true);
 
   this->focused_input = &content_input;
   this->focused_content_input = true;
@@ -123,7 +139,14 @@ bool CardInfo::show(DataManager *data_manager) {
     }
   }
 
-  this->card->content = content_input.get_value();
+  // Preserve the prefix when updating the content
+  string new_content = content_input.get_value();
+  if (this->card->content.find("::") != string::npos) {
+    string prefix = this->card->content.substr(0, this->card->content.find("::") + 2);
+    this->card->content = prefix + new_content;
+  } else {
+    this->card->content = new_content;
+  }
   this->card->description = description_input.get_value();
 
   content_input.clean_up();

@@ -23,7 +23,14 @@ void CardWin::show(int start_y, int start_x) {
 
   box(this->window, 0, 0);
 
-  string shown_content = win_fit_text(this->window, this->card->content);
+  // Hide prefix if it exists
+  string shown_content = this->card->content;
+  size_t pos = shown_content.find("::");
+  if (pos != string::npos) {
+    shown_content = shown_content.substr(pos + 2);
+  }
+
+  shown_content = win_fit_text(this->window, shown_content);
   mvwprintw(this->window, 1, 1, "%s", shown_content.c_str());
 }
 

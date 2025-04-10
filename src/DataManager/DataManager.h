@@ -46,6 +46,7 @@ public:
   bool move_checklist_item_down(Card *card, size_t item_index);
 
   vector<Board> boards;
+  Config* config;
 
 private:
   void write_data_to_file();

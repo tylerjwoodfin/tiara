@@ -1,11 +1,14 @@
 #pragma once
 
-#define NAME "kabmat"
-#define VERSION "2.8.0"
-#define DATA_FILE (string(getenv("HOME")) + "/.local/share/kabmat/data")
-#define DATA_BACKUP_FILE                                                       \
-  (string(getenv("HOME")) + "/.local/share/kabmat/data_bkp")
+#include <string>
+#include "../Config/Config.h"
 
+#define NAME "tiara"
+#define VERSION "1.0.0"
+#define CONFIG_FILE (string(getenv("HOME")) + "/.config/tiara/config")
+#define DATA_FILE (Config::get_data_file_location())
+#define DATA_BACKUP_FILE                                                       \
+  (string(getenv("HOME")) + "/.local/share/tiara/data_bkp")
 #define COLOR_PAIR_FOOTER 1
 #define COLOR_PAIR_MODE 2
 #define COLOR_PAIR_HEADER 3

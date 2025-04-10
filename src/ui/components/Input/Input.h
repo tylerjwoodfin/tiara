@@ -9,7 +9,7 @@ using namespace std;
 class Input {
 public:
   Input(int height, int width, int start_y, int start_x, string content = "",
-        string title = "", bool focused = false);
+        string title = "", bool focused = false, bool multi_row = false);
 
   void show(bool grab_input = false, bool just_redraw = false);
   void clean_up();

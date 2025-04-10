@@ -3,7 +3,7 @@
 #include "../../../helpers/trim_spaces/trim_spaces.h"
 
 Input::Input(int height, int width, int start_y, int start_x, string content,
-             string title, bool focused)
+             string title, bool focused, bool multi_row)
     : height{height}, width{width}, start_y{start_y}, start_x{start_x},
       content_window{
           this->height,
@@ -28,7 +28,7 @@ Input::Input(int height, int width, int start_y, int start_x, string content,
   this->cursor_y = 1;
   this->cursor_x = 1;
 
-  this->multi_row = this->height > 3;
+  this->multi_row = multi_row || this->height > 3;
 
   if (this->multi_row) {
     // construct multi-row content
@@ -134,6 +134,7 @@ void Input::draw_content(vector<string> shown_content,
   else
     this->unfocus();
 
+  // wmove(this->window, this->cursor_y, this->cursor_x);
   wrefresh(this->window);
 }
 

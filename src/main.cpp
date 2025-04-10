@@ -2,10 +2,12 @@
 #include "helpers/consts.h"
 #include "ui/screens/Board/Board.h"
 #include "ui/screens/MainMenu/MainMenu.h"
+#include "Config/Config.h"
 
 int main(int argc, char **argv) {
   DataManager data_manager;
   Config config;
+  config.read_config();  // Read config file before parsing args
   ArgsParser args_parser(argc, argv, &data_manager, &config);
 
   if (config.tui_enabled) {

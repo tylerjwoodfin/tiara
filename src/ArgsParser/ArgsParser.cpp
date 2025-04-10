@@ -80,7 +80,7 @@ void ArgsParser::usage() {
        << endl
        << endl;
 
-  cout << "Usage: kabmat [OPTION]..." << endl << endl;
+  cout << "Usage: tiara [OPTION]..." << endl << endl;
 
   cout << "Options: " << endl;
   cout << "  -h, --help              print this help message" << endl;

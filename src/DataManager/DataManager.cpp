@@ -1,11 +1,10 @@
 #include <filesystem>
 #include <fstream>
-
 #include "../helpers/consts.h"
 #include "../helpers/trim_spaces/trim_spaces.h"
 #include "DataManager.h"
 
-DataManager::DataManager() {
+DataManager::DataManager() : config(new Config()) {
   fstream data_file;
   data_file.open(DATA_FILE, ios::in);
 
@@ -239,6 +238,19 @@ bool DataManager::move_column_right(Board *board, size_t column_index) {
 }
 
 void DataManager::add_card(Column *column, Card card) {
+  if (this->config->prefix) {
+    // Find the highest prefix number in the column
+    int max_prefix = 0;
+    for (const auto &existing_card : column->cards) {
+      size_t pos = existing_card.content.find("::");
+      if (pos != string::npos) {
+        int prefix_num = stoi(existing_card.content.substr(0, pos));
+        max_prefix = max(max_prefix, prefix_num);
+      }
+    }
+    // Add the next number as a prefix
+    card.content = to_string(max_prefix + 1) + "::" + card.content;
+  }
   column->add_card(card);
   this->write_data_to_file();
 }
